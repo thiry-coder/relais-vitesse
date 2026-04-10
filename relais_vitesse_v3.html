@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Relais Vitesse — Observation</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F0F4FA;
+    --surface: #FFFFFF;
+    --surface2: #E4EAF5;
+    --text: #002395;
+    --text2: #1A3A6B;
+    --text3: #6B7FA8;
+    --border: rgba(0,35,149,0.12);
+    --green: #2D6A4F;
+    --green-light: #D8EDDF;
+    --green-mid: #52B788;
+    --red: #8B0000;
+    --red-light: #FFDADA;
+    --red-mid: #ED2939;
+    --amber: #7B4F12;
+    --amber-light: #FDEBD0;
+    --amber-mid: #E89C45;
+    --blue: #002395;
+    --blue-light: #DBE9F8;
+    --blue-mid: #1A6FBB;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 2rem; }
+
+  .topbar { background: var(--text); color: #F5F3EE; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+  .topbar-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; letter-spacing: 0.02em; }
+  .topbar-sub { font-size: 11px; color: rgba(245,243,238,0.55); margin-top: 1px; }
+  .topbar-badge { background: #ED2939; color: #fff; font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; display: none; align-items: center; gap: 5px; }
+  .topbar-badge.show { display: flex; }
+  .rec-dot { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: blink 1s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.15} }
+
+  .container { max-width: 640px; margin: 0 auto; padding: 16px; }
+  .card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 16px; margin-bottom: 12px; }
+
+  /* PERMISSION SCREEN */
+  #permission-screen { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 28px 20px; margin-bottom: 12px; text-align: center; }
+  .perm-icon { font-size: 52px; margin-bottom: 14px; }
+  .perm-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+  .perm-subtitle { font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 20px; max-width: 320px; margin-left: auto; margin-right: auto; }
+  .btn-allow { background: var(--text); color: var(--bg); border: none; border-radius: var(--radius-sm); padding: 15px 32px; font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 600; cursor: pointer; width: 100%; max-width: 300px; transition: opacity 0.15s; }
+  .btn-allow:active { transform: scale(0.97); }
+
+  .browser-guide { margin-top: 24px; text-align: left; }
+  .guide-label { font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; text-align: center; margin-bottom: 10px; }
+  .guide-tabs { display: flex; gap: 6px; justify-content: center; margin-bottom: 12px; }
+  .guide-tab { padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--surface2); color: var(--text2); }
+  .guide-tab.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .guide-content { display: none; }
+  .guide-content.active { display: block; }
+  .guide-step { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text2); line-height: 1.5; }
+  .guide-step:last-child { border-bottom: none; }
+  .guide-num { background: var(--blue-light); color: var(--blue); min-width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  .guide-step b { color: var(--text); font-weight: 500; }
+
+  /* ERROR SCREEN */
+  #error-screen { display: none; background: var(--amber-light); border-radius: var(--radius); border: 1px solid var(--amber-mid); padding: 24px 20px; margin-bottom: 12px; text-align: center; }
+  .err-icon { font-size: 36px; margin-bottom: 10px; }
+  .err-title { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; color: var(--amber); margin-bottom: 6px; }
+  .err-msg { font-size: 13px; color: var(--amber); line-height: 1.6; margin-bottom: 16px; }
+  .err-steps { background: #fff8f0; border-radius: var(--radius-sm); padding: 12px 14px; text-align: left; }
+  .err-step { display: flex; gap: 8px; font-size: 13px; color: var(--text2); padding: 5px 0; border-bottom: 1px solid var(--border); line-height: 1.5; }
+  .err-step:last-child { border-bottom: none; }
+  .err-step b { color: var(--text); font-weight: 500; }
+  .err-num { background: #fde8c8; color: var(--amber); min-width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  .btn-retry { margin-top: 14px; background: var(--amber); color: #fff; border: none; border-radius: var(--radius-sm); padding: 12px 28px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; }
+
+  /* CAMERA SCREEN */
+  #camera-screen { display: none; }
+  .video-wrapper { position: relative; width: 100%; background: #0D0D0B; border-radius: var(--radius); overflow: hidden; aspect-ratio: 16/9; }
+  video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  #playback { display: none; }
+  .video-overlay { position: absolute; bottom: 12px; left: 12px; right: 12px; display: flex; justify-content: flex-start; pointer-events: none; }
+  .timer-pill { background: rgba(13,13,11,0.65); color: #fff; font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600; padding: 4px 11px; border-radius: 20px; display: none; }
+  .timer-pill.show { display: block; }
+
+  .controls { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .btn-row { display: flex; gap: 8px; }
+  .btn { flex: 1; padding: 13px 16px; border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: transform 0.1s, opacity 0.15s; text-align: center; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .btn-record { background: var(--red-mid); color: #fff; border-color: var(--red-mid); font-weight: 600; font-size: 15px; flex: 2; }
+  .btn-ghost { background: var(--surface2); color: var(--text); border-color: var(--border); }
+  .btn-oui { background: var(--green-light); color: var(--green); border-color: var(--green-mid); font-size: 16px; font-weight: 600; }
+  .btn-non { background: var(--red-light); color: var(--red); border-color: var(--red-mid); font-size: 16px; font-weight: 600; }
+  select.btn-ghost { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B6860' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+
+  .section-label { font-family: 'Syne', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3); margin-bottom: 10px; }
+  .divider { display: flex; align-items: center; gap: 10px; margin: 4px 0 12px; }
+  .divider-line { flex: 1; height: 1px; background: var(--border); }
+  .divider-text { font-family: 'Syne', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); }
+
+  .waiting { text-align: center; padding: 20px; color: var(--text3); font-size: 14px; line-height: 1.6; }
+  .waiting-icon { font-size: 28px; margin-bottom: 8px; }
+
+  .step-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .step-chip { background: var(--green-light); color: var(--green); font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; white-space: nowrap; font-family: 'Syne', sans-serif; }
+  .progress-track { flex: 1; height: 3px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--green-mid); border-radius: 2px; transition: width 0.4s ease; }
+  .question-text { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 600; color: var(--text); line-height: 1.45; margin-bottom: 12px; }
+  .tip-box { background: var(--bg); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; color: var(--text2); line-height: 1.55; margin-bottom: 14px; border-left: 3px solid var(--amber-mid); }
+  .tip-box b { color: var(--text); font-weight: 500; }
+
+  .result-box { border-radius: var(--radius); padding: 20px; text-align: center; margin-bottom: 12px; border: 1px solid; }
+  .res-icon { font-size: 38px; margin-bottom: 8px; }
+  .res-title { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .res-desc { font-size: 14px; line-height: 1.55; }
+  .res-avancer { background: var(--green-light); border-color: var(--green-mid); color: var(--green); }
+  .res-reculer { background: var(--red-light); border-color: var(--red-mid); color: var(--red); }
+  .res-corriger { background: var(--amber-light); border-color: var(--amber-mid); color: var(--amber); }
+  .res-bravo { background: var(--green-light); border-color: var(--green-mid); color: var(--green); }
+
+  .history-list { margin-top: 4px; }
+  .history-item { display: flex; align-items: center; justify-content: space-between; font-size: 13px; padding: 7px 0; border-bottom: 1px solid var(--border); color: var(--text2); gap: 10px; }
+  .history-item:last-child { border-bottom: none; }
+  .history-q { flex: 1; line-height: 1.4; }
+  .history-a { font-weight: 600; font-family: 'Syne', sans-serif; font-size: 12px; padding: 2px 9px; border-radius: 20px; white-space: nowrap; }
+  .ha-oui { background: var(--green-light); color: var(--green); }
+  .ha-non { background: var(--red-light); color: var(--red); }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="topbar" style="background:#002395;border-bottom:3px solid #ED2939;">
+  <div>
+    <div class="topbar-title" style="color:#fff;">Relais Vitesse</div>
+    <div class="topbar-sub" style="color:rgba(255,255,255,0.6);">Outil d'observation</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <div class="topbar-badge" id="rec-badge" style="background:#ED2939;">
+      <div class="rec-dot"></div> REC
+    </div>
+    <div style="background:#fff;border-radius:6px;padding:4px 8px;display:flex;align-items:center;"><img src="data:image/png;base64,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" alt="Région Académique Guadeloupe" style="height:44px;width:auto;display:block;"></div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ÉCRAN 1 : AUTORISATION -->
+  <div id="permission-screen">
+    <div class="perm-icon">📷</div>
+    <div class="perm-title">Activer la caméra</div>
+    <div class="perm-subtitle">L'application a besoin d'accéder à ta caméra pour filmer le passage de témoin. Appuie sur le bouton, puis <strong>accepte</strong> quand le navigateur te le demande.</div>
+    <button class="btn-allow" onclick="requestCamera()">📷 Activer la caméra</button>
+
+    <div class="browser-guide">
+      <div class="guide-label">Que faire selon ton navigateur</div>
+      <div class="guide-tabs">
+        <div class="guide-tab" id="tab-btn-safari" onclick="showTab('safari')">Safari</div>
+        <div class="guide-tab" id="tab-btn-chrome" onclick="showTab('chrome')">Chrome</div>
+        <div class="guide-tab" id="tab-btn-firefox" onclick="showTab('firefox')">Firefox</div>
+      </div>
+      <div id="tab-safari" class="guide-content">
+        <div class="guide-step"><div class="guide-num">1</div><div>Un message <b>« … souhaite utiliser votre caméra »</b> va apparaître</div></div>
+        <div class="guide-step"><div class="guide-num">2</div><div>Appuie sur <b>« Autoriser »</b></div></div>
+        <div class="guide-step"><div class="guide-num">3</div><div>Si rien ne se passe : <b>Réglages → Safari → Caméra → Autoriser</b>, puis reviens ici</div></div>
+      </div>
+      <div id="tab-chrome" class="guide-content">
+        <div class="guide-step"><div class="guide-num">1</div><div>Une icône 📷 apparaît dans la barre d'adresse en haut</div></div>
+        <div class="guide-step"><div class="guide-num">2</div><div>Un message demande l'accès — clique sur <b>« Autoriser »</b></div></div>
+        <div class="guide-step"><div class="guide-num">3</div><div>Si bloqué : clique sur l'icône 🔒 → <b>Autorisations du site → Caméra → Autoriser</b></div></div>
+      </div>
+      <div id="tab-firefox" class="guide-content">
+        <div class="guide-step"><div class="guide-num">1</div><div>Un bandeau apparaît en haut de la page</div></div>
+        <div class="guide-step"><div class="guide-num">2</div><div>Clique sur <b>« Autoriser »</b></div></div>
+        <div class="guide-step"><div class="guide-num">3</div><div>Si bloqué : icône 🎥 dans la barre d'adresse → <b>Supprimer le blocage</b></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ÉCRAN 2 : ERREUR -->
+  <div id="error-screen">
+    <div class="err-icon">⚠️</div>
+    <div class="err-title">Accès refusé</div>
+    <div class="err-msg">L'accès à la caméra a été bloqué. Suis ces étapes, puis appuie sur Réessayer.</div>
+    <div class="err-steps" id="error-steps"></div>
+    <button class="btn-retry" onclick="requestCamera()">🔄 Réessayer</button>
+  </div>
+
+  <!-- ÉCRAN 3 : APPLICATION -->
+  <div id="camera-screen">
+    <div class="card" style="padding: 12px;">
+      <div class="section-label">Caméra</div>
+      <div class="video-wrapper">
+        <video id="live" autoplay muted playsinline></video>
+        <video id="playback" playsinline controls></video>
+        <div class="video-overlay">
+          <div class="timer-pill" id="timer">0:00</div>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="btn-row" id="ctrl-idle">
+          <button class="btn btn-record" onclick="startRec()">⏺ Commencer à filmer</button>
+          <button class="btn btn-ghost" onclick="switchCam()">🔄</button>
+        </div>
+        <div class="btn-row hidden" id="ctrl-rec">
+          <button class="btn btn-primary" style="flex:2;font-size:15px;font-weight:600;" onclick="stopRec()">⏹ Arrêter et analyser</button>
+        </div>
+        <div class="hidden" id="ctrl-playback">
+          <div class="btn-row">
+            <button class="btn btn-ghost" onclick="replayFull()">↩ Début</button>
+            <button class="btn btn-ghost" onclick="rewind5()">−5s</button>
+            <select class="btn btn-ghost" onchange="setSpeed(this.value)">
+              <option value="1">Vitesse ×1</option>
+              <option value="0.5">Ralenti ×0.5</option>
+              <option value="0.25">Ralenti ×0.25</option>
+              <option value="2">Rapide ×2</option>
+            </select>
+            <button class="btn btn-ghost" onclick="reFilm()">🎬</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider">
+      <div class="divider-line"></div>
+      <div class="divider-text">Arbre décisionnel</div>
+      <div class="divider-line"></div>
+    </div>
+
+    <div id="waiting-msg" class="waiting">
+      <div class="waiting-icon">📋</div>
+      <div>Filme le passage de témoin,<br>puis arrête l'enregistrement<br>pour commencer l'analyse.</div>
+    </div>
+
+    <div id="question-view" class="card hidden">
+      <div class="step-row">
+        <div class="step-chip" id="step-label">Étape 1/6</div>
+        <div class="progress-track"><div class="progress-fill" id="progress" style="width:16%"></div></div>
+      </div>
+      <div class="question-text" id="question-text"></div>
+      <div class="tip-box" id="tip-text"></div>
+      <div class="btn-row">
+        <button class="btn btn-oui" onclick="answer('oui')">✓ Oui</button>
+        <button class="btn btn-non" onclick="answer('non')">✗ Non</button>
+      </div>
+    </div>
+
+    <div id="result-view" class="hidden">
+      <div class="result-box" id="result-box">
+        <div class="res-icon" id="res-icon"></div>
+        <div class="res-title" id="res-title"></div>
+        <div class="res-desc" id="res-desc"></div>
+      </div>
+      <div class="card">
+        <div class="section-label">Récapitulatif des observations</div>
+        <div class="history-list" id="history"></div>
+      </div>
+      <div class="btn-row" style="margin-top:4px;">
+        <button class="btn btn-ghost" onclick="restart()">↩ Réanalyser</button>
+        <button class="btn btn-primary" onclick="reFilm()">🎬 Nouvelle vidéo</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const steps = [
+  { id:1, q:"Le receveur est-il en déséquilibre avant ?", tip:"<b>Quoi observer :</b> la posture du receveur au départ — est-il bien penché vers l'avant, en position de course ?", oui:2, non:"corriger" },
+  { id:2, q:"Le receveur est-il parti à fond à la marque ?", tip:"<b>Quoi observer :</b> le départ du receveur — part-il à fond dès que le donneur atteint la marque ?", oui:3, non:"corriger" },
+  { id:3, q:"La chasuble est-elle attrapée dans la zone ?", tip:"<b>Quoi observer :</b> le lieu de la transmission — la chasuble passe-t-elle à l'intérieur de la zone réglementaire ?", oui:4, non:"avancer" },
+  { id:4, q:"Le donneur conserve-t-il sa vitesse ?", tip:"<b>Quoi observer :</b> le donneur — maintient-il son allure sans ralentir pendant la transmission ?", oui:5, non:"reculer" },
+  { id:5, q:"Le receveur a-t-il conservé sa vitesse ?", tip:"<b>Quoi observer :</b> le receveur — accélère-t-il ou reste-t-il à pleine vitesse lors de la réception ?", oui:6, non:"reculer" },
+  { id:6, q:"La chasuble est-elle attrapée en fin de zone ?", tip:"<b>Quoi observer :</b> la position dans la zone — le passage a-t-il lieu le plus loin possible pour maximiser la vitesse ?", oui:"bravo", non:"avancer_marque" }
+];
+const results = {
+  corriger:      { cls:"res-corriger", icon:"⚠️", title:"Corriger et recourir",  desc:"Corriger la posture ou le départ du receveur, puis refaire le passage." },
+  avancer:       { cls:"res-avancer",  icon:"➡️", title:"Avancer la marque",     desc:"La chasuble est attrapée trop tôt. Avancer la marque pour que le passage ait lieu plus loin dans la zone." },
+  reculer:       { cls:"res-reculer",  icon:"⬅️", title:"Reculer la marque",     desc:"La vitesse n'est pas maintenue ou le passage est trop tardif. Reculer la marque pour mieux ajuster le départ." },
+  bravo:         { cls:"res-bravo",    icon:"🏆", title:"Bravo !",               desc:"Passage parfait — en fin de zone, à pleine vitesse, dans les règles. Objectif atteint !" },
+  avancer_marque:{ cls:"res-avancer",  icon:"➡️", title:"Avancer la marque",     desc:"La chasuble n'est pas reçue assez loin dans la zone. Avancer légèrement la marque." }
+};
+
+const errorGuides = {
+  safari:  ["Va dans <b>Réglages</b> (iPhone/iPad) → <b>Safari</b> → <b>Caméra</b> → <b>Autoriser</b>","Reviens sur cette page et appuie sur <b>Réessayer</b>","Si le problème persiste, ferme Safari et rouvre la page"],
+  chrome:  ["Appuie sur l'icône 🔒 dans la barre d'adresse","<b>Autorisations du site</b> → <b>Caméra</b> → <b>Autoriser</b>","Recharge la page puis appuie sur <b>Réessayer</b>"],
+  firefox: ["Clique sur l'icône 🎥 dans la barre d'adresse","<b>Supprimer le blocage</b> pour la caméra","Recharge la page puis appuie sur <b>Réessayer</b>"],
+  default: ["Va dans les <b>réglages de ton navigateur</b>","Cherche <b>Autorisations → Caméra</b>","Autorise cette page, puis appuie sur <b>Réessayer</b>"]
+};
+
+function detectBrowser() {
+  const ua = navigator.userAgent;
+  if (/safari/i.test(ua) && !/chrome/i.test(ua)) return "safari";
+  if (/chrome/i.test(ua) || /crios/i.test(ua)) return "chrome";
+  if (/firefox/i.test(ua) || /fxios/i.test(ua)) return "firefox";
+  return "default";
+}
+
+function showTab(name) {
+  ['safari','chrome','firefox'].forEach(b => {
+    document.getElementById('tab-btn-' + b).classList.toggle('active', b === name);
+    document.getElementById('tab-' + b).classList.toggle('active', b === name);
+  });
+}
+
+let stream = null, recorder = null, chunks = [], blobUrl = null;
+let facingMode = "environment";
+let timerInterval = null, elapsed = 0;
+let currentStep = 1, history = [];
+
+async function requestCamera() {
+  try {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode, width:{ideal:1280}, height:{ideal:720} }, audio: false });
+    document.getElementById('permission-screen').style.display = 'none';
+    document.getElementById('error-screen').style.display = 'none';
+    document.getElementById('camera-screen').style.display = 'block';
+    const live = document.getElementById('live');
+    live.srcObject = stream;
+    live.style.display = 'block';
+    document.getElementById('playback').style.display = 'none';
+  } catch(e) {
+    document.getElementById('permission-screen').style.display = 'none';
+    document.getElementById('error-screen').style.display = 'block';
+    const browser = detectBrowser();
+    const guide = errorGuides[browser] || errorGuides.default;
+    document.getElementById('error-steps').innerHTML = guide.map((s,i) =>
+      `<div class="err-step"><div class="err-num">${i+1}</div><div>${s}</div></div>`
+    ).join('');
+  }
+}
+
+function startRec() {
+  chunks = [];
+  const mimeType = MediaRecorder.isTypeSupported("video/mp4") ? "video/mp4" : "video/webm";
+  recorder = new MediaRecorder(stream, { mimeType });
+  recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, { type: recorder.mimeType });
+    if (blobUrl) URL.revokeObjectURL(blobUrl);
+    blobUrl = URL.createObjectURL(blob);
+    const pb = document.getElementById('playback');
+    pb.src = blobUrl;
+    pb.style.display = 'block';
+    document.getElementById('live').style.display = 'none';
+    pb.play();
+    hide('ctrl-idle'); hide('ctrl-rec'); show('ctrl-playback');
+    hide('waiting-msg'); show('question-view');
+    renderQ();
+  };
+  recorder.start(100);
+  elapsed = 0;
+  document.getElementById('timer').classList.add('show');
+  document.getElementById('rec-badge').classList.add('show');
+  timerInterval = setInterval(() => {
+    elapsed++;
+    const m = Math.floor(elapsed/60), s = elapsed%60;
+    document.getElementById('timer').textContent = m + ':' + (s<10?'0':'') + s;
+  }, 1000);
+  hide('ctrl-idle'); show('ctrl-rec');
+}
+
+function stopRec() {
+  if (recorder && recorder.state !== 'inactive') recorder.stop();
+  clearInterval(timerInterval);
+  document.getElementById('rec-badge').classList.remove('show');
+  document.getElementById('timer').classList.remove('show');
+  hide('ctrl-rec');
+}
+
+function switchCam() {
+  facingMode = facingMode === 'environment' ? 'user' : 'environment';
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  navigator.mediaDevices.getUserMedia({ video: { facingMode }, audio: false }).then(s => {
+    stream = s; document.getElementById('live').srcObject = s;
+  });
+}
+
+function replayFull() { const v = document.getElementById('playback'); v.currentTime = 0; v.play(); }
+function rewind5()    { const v = document.getElementById('playback'); v.currentTime = Math.max(0, v.currentTime - 5); }
+function setSpeed(s)  { document.getElementById('playback').playbackRate = parseFloat(s); }
+
+function reFilm() {
+  hide('ctrl-playback'); hide('question-view'); hide('result-view');
+  show('waiting-msg'); show('ctrl-idle');
+  history = []; currentStep = 1;
+  document.getElementById('playback').style.display = 'none';
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  navigator.mediaDevices.getUserMedia({ video: { facingMode }, audio: false }).then(s => {
+    stream = s;
+    const live = document.getElementById('live');
+    live.srcObject = s; live.style.display = 'block';
+  });
+}
+
+function getStep() { return steps.find(s => s.id === currentStep); }
+function renderQ() {
+  const s = getStep();
+  document.getElementById('step-label').textContent = `Étape ${currentStep}/6`;
+  document.getElementById('progress').style.width = `${(currentStep/6)*100}%`;
+  document.getElementById('question-text').textContent = s.q;
+  document.getElementById('tip-text').innerHTML = s.tip;
+}
+function answer(rep) {
+  const s = getStep();
+  history.push({ q: s.q, a: rep });
+  const next = s[rep];
+  if (typeof next === 'number') { currentStep = next; renderQ(); }
+  else showResult(next);
+}
+function showResult(key) {
+  hide('question-view'); show('result-view');
+  const r = results[key];
+  document.getElementById('result-box').className = 'result-box ' + r.cls;
+  document.getElementById('res-icon').textContent = r.icon;
+  document.getElementById('res-title').textContent = r.title;
+  document.getElementById('res-desc').textContent = r.desc;
+  document.getElementById('history').innerHTML = history.map(h =>
+    `<div class="history-item"><span class="history-q">${h.q}</span><span class="history-a ${h.a==='oui'?'ha-oui':'ha-non'}">${h.a==='oui'?'✓ Oui':'✗ Non'}</span></div>`
+  ).join('');
+}
+function restart() {
+  history = []; currentStep = 1;
+  hide('result-view'); show('question-view'); renderQ();
+}
+function show(id) { document.getElementById(id).classList.remove('hidden'); }
+function hide(id) { document.getElementById(id).classList.add('hidden'); }
+
+// Pré-sélectionne le bon onglet selon le navigateur détecté
+const detected = detectBrowser();
+showTab(detected === 'default' ? 'safari' : detected);
+</script>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px 24px;font-family:'DM Sans',sans-serif;font-size:12px;color:#6B7FA8;border-top:1px solid rgba(0,35,149,0.1);margin-top:4px;">
+  <span>Formation Relais / Vitesse 2026 — E. Moulins &amp; C. Thiry</span>
+  <span style="color:#ED2939;font-weight:600;letter-spacing:0.05em;">🇫🇷</span>
+</div>
+</body>
+</html>
